@@ -24,6 +24,7 @@ import com.google.zxing.MultiFormatReader;
 import com.google.zxing.PlanarYUVLuminanceSource;
 import com.google.zxing.ReaderException;
 import com.google.zxing.Result;
+import com.google.zxing.client.android.camera.CameraManager;
 import com.google.zxing.common.HybridBinarizer;
 
 import android.os.Bundle;
@@ -107,6 +108,43 @@ final class DecodeHandler extends Handler {
                 message.sendToTarget();
             }
         }
+
+
+
+        //modify here
+//        byte[] rotatedData = new byte[data.length];
+//        for (int y = 0; y < height; y++) {
+//            for (int x = 0; x < width; x++)
+//                rotatedData[x * height + height - y - 1] = data[x + y * width];
+//        }
+//        int tmp = width; // Here we are swapping, that's the difference to #11
+//        width = height;
+//        height = tmp;
+//        PlanarYUVLuminanceSource source = activity.getCameraManager().buildLuminanceSource(rotatedData, width, height);
+//        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+//        try {
+//            rawResult = multiFormatReader.decodeWithState(bitmap);
+//        } catch (ReaderException re) {
+//            // continue
+//        } finally {
+//            multiFormatReader.reset();
+//        }
+//
+//        if (rawResult != null) {
+//            long end = System.currentTimeMillis();
+//            Log.d(TAG, "Found barcode (" + (end - start) + " ms):\n" + rawResult.toString());
+//            Message message = Message.obtain(activity.getHandler(), R.id.decode_succeeded, rawResult);
+//            Bundle bundle = new Bundle();
+////            bundle.putParcelable(DecodeThread.BARCODE_BITMAP, source.renderCroppedGreyscaleBitmap());
+//            bundle.putParcelable(DecodeThread.BARCODE_BITMAP, source.renderCroppedGreyscaleBitmap());
+//            message.setData(bundle);
+//            //Log.d(TAG, "Sending decode succeeded message...");
+//            message.sendToTarget();
+//        } else {
+//            Message message = Message.obtain(activity.getHandler(), R.id.decode_failed);
+//            message.sendToTarget();
+//        }
+
     }
 
     private static void bundleThumbnail(PlanarYUVLuminanceSource source, Bundle bundle) {

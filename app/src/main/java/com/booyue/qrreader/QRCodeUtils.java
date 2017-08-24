@@ -2,11 +2,21 @@ package com.booyue.qrreader;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.widget.ImageView;
 
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.ChecksumException;
 import com.google.zxing.EncodeHintType;
+import com.google.zxing.FormatException;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.RGBLuminanceSource;
+import com.google.zxing.Result;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
+import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.qrcode.QRCodeReader;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
@@ -75,50 +85,47 @@ public class QRCodeUtils {
         return false;
     }
 
-    /**
-     * 在二维码中间添加Logo图案
-     */
-    private static Bitmap addLogo(Bitmap src, Bitmap logo) {
-        if (src == null) {
-            return null;
-        }
-
-        if (logo == null) {
-            return src;
-        }
-
-        //获取图片的宽高
-        int srcWidth = src.getWidth();
-        int srcHeight = src.getHeight();
-        int logoWidth = logo.getWidth();
-        int logoHeight = logo.getHeight();
-
-        if (srcWidth == 0 || srcHeight == 0) {
-            return null;
-        }
-
-        if (logoWidth == 0 || logoHeight == 0) {
-            return src;
-        }
-
-        //logo大小为二维码整体大小的1/5
-        float scaleFactor = srcWidth * 1.0f / 5 / logoWidth;
-        Bitmap bitmap = Bitmap.createBitmap(srcWidth, srcHeight, Bitmap.Config.ARGB_8888);
-        try {
-            Canvas canvas = new Canvas(bitmap);
-            canvas.drawBitmap(src, 0, 0, null);
-            canvas.scale(scaleFactor, scaleFactor, srcWidth / 2, srcHeight / 2);
-            canvas.drawBitmap(logo, (srcWidth - logoWidth) / 2, (srcHeight - logoHeight) / 2, null);
-
-            canvas.save(Canvas.ALL_SAVE_FLAG);
-            canvas.restore();
-        } catch (Exception e) {
-            bitmap = null;
-            e.getStackTrace();
-        }
-
-        return bitmap;
-    }
+//    private static Bitmap addLogo(Bitmap src, Bitmap logo) {
+//        if (src == null) {
+//            return null;
+//        }
+//
+//        if (logo == null) {
+//            return src;
+//        }
+//
+//        //获取图片的宽高
+//        int srcWidth = src.getWidth();
+//        int srcHeight = src.getHeight();
+//        int logoWidth = logo.getWidth();
+//        int logoHeight = logo.getHeight();
+//
+//        if (srcWidth == 0 || srcHeight == 0) {
+//            return null;
+//        }
+//
+//        if (logoWidth == 0 || logoHeight == 0) {
+//            return src;
+//        }
+//
+//        //logo大小为二维码整体大小的1/5
+//        float scaleFactor = srcWidth * 1.0f / 5 / logoWidth;
+//        Bitmap bitmap = Bitmap.createBitmap(srcWidth, srcHeight, Bitmap.Config.ARGB_8888);
+//        try {
+//            Canvas canvas = new Canvas(bitmap);
+//            canvas.drawBitmap(src, 0, 0, null);
+//            canvas.scale(scaleFactor, scaleFactor, srcWidth / 2, srcHeight / 2);
+//            canvas.drawBitmap(logo, (srcWidth - logoWidth) / 2, (srcHeight - logoHeight) / 2, null);
+//
+//            canvas.save(Canvas.ALL_SAVE_FLAG);
+//            canvas.restore();
+//        } catch (Exception e) {
+//            bitmap = null;
+//            e.getStackTrace();
+//        }
+//
+//        return bitmap;
+//    }
 
     /**
      * 在二维码上加上logo
@@ -126,24 +133,65 @@ public class QRCodeUtils {
      * @param logoBitmap logo图片
      * @return 有logo的二维码图片
      */
-//    private Bitmap addLogo(Bitmap qrBitmap, Bitmap logoBitmap) {
-//        int qrBitmapWidth = qrBitmap.getWidth();
-//        int qrBitmapHeight = qrBitmap.getHeight();
-//        int logoBitmapWidth = logoBitmap.getWidth();
-//        int logoBitmapHeight = logoBitmap.getHeight();
-//        Bitmap blankBitmap = Bitmap.createBitmap(qrBitmapWidth, qrBitmapHeight, Bitmap.Config.ARGB_8888);
-//        Canvas canvas = new Canvas(blankBitmap);
-//        canvas.drawBitmap(qrBitmap, 0, 0, null);
-//        canvas.save(Canvas.ALL_SAVE_FLAG);
-//        float scaleSize = 1.0f;
-//        while ((logoBitmapWidth / scaleSize) > (qrBitmapWidth / 5) || (logoBitmapHeight / scaleSize) > (qrBitmapHeight / 5)) {
-//            scaleSize *= 2;
-//        }
-//        float sx = 1.0f / scaleSize;
-//        canvas.scale(sx, sx, qrBitmapWidth / 2, qrBitmapHeight / 2);
-//        canvas.drawBitmap(logoBitmap, (qrBitmapWidth - logoBitmapWidth) / 2, (qrBitmapHeight - logoBitmapHeight) / 2, null);
-//        canvas.restore();
-//        return blankBitmap;
-//    }
+
+    private static Bitmap addLogo(Bitmap qrBitmap, Bitmap logoBitmap) {
+        if (qrBitmap == null) {
+            return null;
+        }
+        if (logoBitmap == null) {
+            return qrBitmap;
+        }
+        int qrBitmapWidth = qrBitmap.getWidth();
+        int qrBitmapHeight = qrBitmap.getHeight();
+        int logoBitmapWidth = logoBitmap.getWidth();
+        int logoBitmapHeight = logoBitmap.getHeight();
+        if (qrBitmapWidth == 0 || qrBitmapHeight == 0) {
+            return null;
+        }
+        if (logoBitmapWidth == 0 || logoBitmapHeight == 0) {
+            return qrBitmap;
+        }
+        Bitmap blankBitmap = Bitmap.createBitmap(qrBitmapWidth, qrBitmapHeight, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(blankBitmap);
+        canvas.drawBitmap(qrBitmap, 0, 0, null);
+        canvas.save(Canvas.ALL_SAVE_FLAG);
+        float scaleSize = 1.0f;
+        while ((logoBitmapWidth / scaleSize) > (qrBitmapWidth / 5) || (logoBitmapHeight / scaleSize) > (qrBitmapHeight / 5)) {
+            scaleSize *= 2;
+        }
+        float sx = 1.0f / scaleSize;
+        canvas.scale(sx, sx, qrBitmapWidth / 2, qrBitmapHeight / 2);
+        canvas.drawBitmap(logoBitmap, (qrBitmapWidth - logoBitmapWidth) / 2, (qrBitmapHeight - logoBitmapHeight) / 2, null);
+        canvas.restore();
+        return blankBitmap;
+    }
+
+    /**
+     * 识别二维码
+     * @return
+     */
+    public static Result recogizeQRCode(ImageView ivQRCode){
+        Bitmap obmp = ((BitmapDrawable) (ivQRCode).getDrawable()).getBitmap();
+        int width = obmp.getWidth();
+        int height = obmp.getHeight();
+        int[] data = new int[width * height];
+        obmp.getPixels(data, 0, width, 0, 0, width, height);
+        RGBLuminanceSource source = new RGBLuminanceSource(width, height, data);
+        BinaryBitmap bitmap1 = new BinaryBitmap(new HybridBinarizer(source));
+        QRCodeReader reader = new QRCodeReader();
+        Result re = null;
+        try {
+            re = reader.decode(bitmap1);
+            return re;
+        } catch (NotFoundException e) {
+            e.printStackTrace();
+        } catch (ChecksumException e) {
+            e.printStackTrace();
+        } catch (FormatException e) {
+            e.printStackTrace();
+        }
+        return re;
+    }
+
 
 }

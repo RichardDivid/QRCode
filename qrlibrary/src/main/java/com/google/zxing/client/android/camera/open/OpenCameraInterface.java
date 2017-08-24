@@ -42,7 +42,7 @@ public final class OpenCameraInterface {
    * @return handle to {@link OpenCamera} that was opened
    */
   public static OpenCamera open(int cameraId) {
-
+    //获取数量检测是否存在camera
     int numCameras = Camera.getNumberOfCameras();
     if (numCameras == 0) {
       Log.w(TAG, "No cameras!");
